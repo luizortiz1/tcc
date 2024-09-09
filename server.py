@@ -2,6 +2,7 @@ from flask import Flask, render_template, request, redirect, url_for, session, f
 import sqlite3
 import datetime
 import os
+import ssl #biblioteca para dar suporte a ssl
 
 app = Flask(__name__)
 app.secret_key = 'sua_chave_secreta_aqui'  # Chave secreta para sessões
@@ -140,6 +141,11 @@ def delete_key(machine_id):
         print(f"Erro ao excluir a chave: {e}")
         return "Erro ao excluir a chave", 500
 
+
 if __name__ == '__main__':
     init_db()
-    app.run(host='192.168.74.123', port=5000)
+    #Configuração pra HTTPS
+    context = ssl.SSLContext(ssl.PROTOCOL_TLS)
+    context.load_cert_chain('cert.pem','key.pem')
+
+    app.run(host='10.0.2.15', port=5000, ssl_context=context)
