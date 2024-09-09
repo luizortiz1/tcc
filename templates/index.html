@@ -4,62 +4,48 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Machine Keys</title>
-    <style>
-        table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-        table, th, td {
-            border: 1px solid black;
-        }
-        th, td {
-            padding: 8px;
-            text-align: left;
-        }
-        th {
-            background-color: #f2f2f2;
-        }
-    </style>
+    <link rel="stylesheet" href="{{ url_for('static', filename='index.css') }}">
 </head>
 <body>
-    <h1>Bem-vindo, {{ user }}!</h1>
-    <p>Você está logado na aplicação.</p>
-    <a href="{{ url_for('logout') }}">Logout</a>
-    <h1>Machine Keys</h1>
-    <table>
-        <thead>
-            <tr>
-                <th>Machine ID</th>
-                <th>Machine Name</th>
-                <th>Ip Address</th>
-                <th>Public IP</th>
-                <th>OS</th>
-                <th>Encryption Key</th>
-                <th>Localization</th>
-                <th>Execution Time</th>
-                <th>Actions</th> <!-- Nova coluna para ações -->
-            </tr>
-        </thead>
-        <tbody>
-            {% for row in rows %}
-            <tr>
-                <td>{{ row[0] }}</td>
-                <td>{{ row[1] }}</td>
-                <td>{{ row[2] }}</td>
-                <td>{{ row[4] }}</td>
-                <td>{{ row[3] }}</td>
-                <td>{{ row[5] }}</td>
-                <td>{{ row[6] }}</td>
-                <td>{{ row[7] }}</td>
-                <td>
-                    <!-- Botão de exclusão -->
-                    <form action="{{ url_for('delete_key', machine_id=row[0]) }}" method="post" style="display:inline;">
-                        <button type="submit">Excluir</button>
-                    </form>
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+    <div class="container">
+        <button class="logout-button" onclick="window.location.href='{{ url_for('logout') }}'">Logout</button>
+        <h2>Machine Keys</h2>
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Machine ID</th>
+                        <th>Machine Name</th>
+                        <th>IP Address</th>
+                        <th>Public IP</th>
+                        <th>OS</th>
+                        <th>Encryption Key</th>
+                        <th>Localization</th>
+                        <th>Execution Time</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in rows %}
+                    <tr>
+                        <td>{{ row[0] }}</td>
+                        <td>{{ row[1] }}</td>
+                        <td>{{ row[2] }}</td>
+                        <td>{{ row[4] }}</td>
+                        <td>{{ row[3] }}</td>
+                        <td>{{ row[5] }}</td>
+                        <td>{{ row[6] }}</td>
+                        <td>{{ row[7] }}</td>
+                        <td>
+                            <form action="{{ url_for('delete_key', machine_id=row[0]) }}" method="post" style="display:inline;">
+                                <button type="submit">Excluir</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
 </body>
 </html>

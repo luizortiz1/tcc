@@ -23,10 +23,10 @@ def login():
         # Validação do usuário
         if username in users and users[username] == password:
             session['username'] = username  # Armazena o usuário na sessão
-            flash('Login realizado com sucesso!', 'success')
+            #flash('Login realizado com sucesso!', 'success')
             return redirect(url_for('index'))
         else:
-            flash('Nome de usuário ou senha incorretos!', 'danger')
+            #flash('Nome de usuário ou senha incorretos!', 'danger')
             return redirect(url_for('login'))
     
     return render_template('login.html')
@@ -41,14 +41,14 @@ def index():
             rows = cursor.fetchall()
         return render_template('index.html', user=session['username'], rows=rows)
     else:
-        flash('Por favor, faça login para acessar essa página.', 'warning')
+        #flash('Por favor, faça login para acessar essa página.', 'warning')
         return redirect(url_for('login'))
 
 # Rota para logout
 @app.route('/logout')
 def logout():
     session.pop('username', None)  # Remove o usuário da sessão
-    flash('Você foi desconectado.', 'info')
+    #flash('Você foi desconectado.', 'info')
     return redirect(url_for('login'))
 
 # Configuração do banco de dados SQLite
@@ -148,4 +148,10 @@ if __name__ == '__main__':
     context = ssl.SSLContext(ssl.PROTOCOL_TLS)
     context.load_cert_chain('cert.pem','key.pem')
 
-    app.run(host='10.0.2.15', port=5000, ssl_context=context)
+    app.run(host='192.168.15.15', port=5000, ssl_context=context)
+
+"""Comandos para verificar a chave e certificado
+openssl x509 -noout -modulus -in cert.pem | openssl md5
+openssl rsa -noout -modulus -in key.pem | openssl md5
+
+"""
