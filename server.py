@@ -145,7 +145,7 @@ def delete_key(machine_id):
 if __name__ == '__main__':
     init_db()
     #Configuração pra HTTPS
-    context = ssl.SSLContext(ssl.PROTOCOL_TLS)
+    context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
     context.load_cert_chain('cert.pem','key.pem')
 
     app.run(host='192.168.15.15', port=5000, ssl_context=context)
